@@ -1,0 +1,63 @@
+{
+  "name": "@oarn/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript/JavaScript SDK for the OARN Network",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs && npm run build:types",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/fix-cjs.js",
+    "build:types": "tsc -p tsconfig.types.json",
+    "clean": "rimraf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "oarn",
+    "blockchain",
+    "ethereum",
+    "arbitrum",
+    "ai",
+    "decentralized",
+    "ipfs"
+  ],
+  "author": "OARN Network",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oarn-network/oarn-sdk"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "multiformats": "^13.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

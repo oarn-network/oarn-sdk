@@ -1,5 +1,5 @@
 {
-  "name": "@oarn/sdk",
+  "name": "@oarnnetwork/sdk",
   "version": "0.1.0",
   "description": "TypeScript/JavaScript SDK for the OARN Network",
   "type": "module",

@@ -1,17 +1,17 @@
-# @oarn/sdk
+# @oarnnetwork/sdk
 
 TypeScript/JavaScript SDK for interacting with the OARN Network.
 
 ## Installation
 
 ```bash
-npm install @oarn/sdk
+npm install @oarnnetwork/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { OARNClient, TaskStatus, parseTokenAmount } from '@oarn/sdk';
+import { OARNClient, TaskStatus, parseTokenAmount } from '@oarnnetwork/sdk';
 
 // Initialize client with private key for transactions
 const client = new OARNClient({
@@ -33,7 +33,7 @@ console.log(`Task ${taskId} submitted in tx ${tx.hash}`);
 ## Configuration
 
 ```typescript
-import { OARNClient } from '@oarn/sdk';
+import { OARNClient } from '@oarnnetwork/sdk';
 
 const client = new OARNClient({
   // RPC URL (defaults to Arbitrum Sepolia)
@@ -188,7 +188,7 @@ import {
   formatTokenAmount,
   parseTokenAmount,
   isValidAddress,
-} from '@oarn/sdk';
+} from '@oarnnetwork/sdk';
 
 // Hash data for result submission
 const hash = hashResult(Buffer.from('result data'));

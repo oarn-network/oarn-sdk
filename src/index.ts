@@ -49,3 +49,28 @@ export type {
 } from './types.js';
 
 export { TaskStatus, ConsensusType } from './types.js';
+
+// Batch task types and utilities
+export type {
+  BatchInput,
+  BatchInputManifest,
+  BatchResult,
+  BatchResultManifest,
+  AggregatedBatchResults,
+  ParameterGridConfig,
+  ParameterSchema,
+  ExecutionMetadata,
+} from './batch.js';
+
+export {
+  generateParameterGrid,
+  createBatchInputManifest,
+  computeInputsChecksum,
+  computeAggregatedHash,
+  validateBatchInputManifest,
+  validateBatchResultManifest,
+  findOptimalByMetric,
+  filterByThreshold,
+  getTopN,
+  calculateMetricStats,
+} from './batch.js';

@@ -59,6 +59,8 @@ export interface SubmitTaskOptions {
   requiredNodes: number;
   deadline: number;
   consensusType?: ConsensusType;
+  /** JSON string with model requirements (framework, memory, batch_mode, etc.) */
+  modelRequirements?: string;
 }
 
 // Client configuration

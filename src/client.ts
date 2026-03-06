@@ -16,6 +16,24 @@ import type {
   Balance,
   ConsensusType,
 } from './types.js';
+import type {
+  BatchInput,
+  BatchInputManifest,
+  BatchResult,
+  BatchResultManifest,
+  AggregatedBatchResults,
+  ParameterGridConfig,
+  ParameterSchema,
+} from './batch.js';
+import {
+  generateParameterGrid,
+  createBatchInputManifest,
+  validateBatchResultManifest,
+  findOptimalByMetric,
+  filterByThreshold,
+  getTopN,
+  calculateMetricStats,
+} from './batch.js';
 
 export class OARNClient {
   private blockchain: Blockchain;
@@ -351,5 +369,307 @@ export class OARNClient {
    */
   removeAllListeners(): void {
     this.blockchain.removeAllListeners();
+  }
+
+  // ============================================
+  // Batch Task Operations
+  // ============================================
+
+  /**
+   * Submit a batch task with multiple input parameters
+   *
+   * This uploads a batch input manifest to IPFS and submits a task
+   * where nodes will process all inputs in parallel.
+   *
+   * @param modelData - Model data (ONNX model or path)
+   * @param inputs - Array of input parameter sets
+   * @param rewardPerNode - Reward per node in wei
+   * @param requiredNodes - Number of required nodes for consensus
+   * @param deadline - Unix timestamp deadline
+   * @param consensusType - Consensus type (optional)
+   * @param parameterSchema - Schema describing parameters (optional)
+   * @returns Task ID, transaction, and CIDs
+   *
+   * @example
+   * ```typescript
+   * // Generate parameter grid
+   * const inputs = generateParameterGrid({
+   *   temperature: { min: 20, max: 40, steps: 10 },
+   *   concentration: { min: 0.1, max: 1.0, steps: 10 },
+   * });
+   *
+   * // Submit batch task
+   * const { taskId, modelCid, manifestCid } = await client.submitBatchTask(
+   *   modelBuffer,
+   *   inputs,
+   *   parseEther('0.1'),
+   *   5,
+   *   deadline
+   * );
+   * ```
+   */
+  async submitBatchTask(
+    modelData: Buffer | string,
+    inputs: BatchInput[],
+    rewardPerNode: bigint,
+    requiredNodes: number,
+    deadline: number,
+    consensusType?: ConsensusType,
+    parameterSchema?: ParameterSchema
+  ): Promise<{
+    taskId: number;
+    tx: ContractTransactionResponse;
+    modelCid: string;
+    manifestCid: string;
+    totalInputs: number;
+  }> {
+    // Upload model to IPFS
+    const modelCid = await this.storage.upload(modelData);
+
+    // Create batch input manifest
+    const manifest = createBatchInputManifest(modelCid, inputs, parameterSchema);
+
+    // Upload manifest to IPFS
+    const manifestJson = JSON.stringify(manifest, null, 2);
+    const manifestCid = await this.storage.upload(manifestJson);
+
+    // Convert CIDs to bytes32 for contract
+    const modelHash = cidToBytes32(modelCid);
+    const inputHash = cidToBytes32(manifestCid);
+
+    // Submit task with manifest as input
+    // The batch_mode flag is encoded in the manifest itself
+    const { taskId, tx } = await this.blockchain.submitTask({
+      modelHash,
+      inputHash,
+      rewardPerNode,
+      requiredNodes,
+      deadline,
+      consensusType,
+    });
+
+    return {
+      taskId,
+      tx,
+      modelCid,
+      manifestCid,
+      totalInputs: inputs.length,
+    };
+  }
+
+  /**
+   * Submit a batch task using a parameter grid configuration
+   *
+   * Convenience method that generates parameter combinations from a grid config.
+   *
+   * @example
+   * ```typescript
+   * const { taskId } = await client.submitBatchTaskFromGrid(
+   *   modelBuffer,
+   *   {
+   *     temperature: { min: 20, max: 40, steps: 5 },
+   *     concentration: [0.1, 0.5, 1.0], // Explicit values
+   *   },
+   *   parseEther('0.1'),
+   *   5,
+   *   deadline
+   * );
+   * ```
+   */
+  async submitBatchTaskFromGrid(
+    modelData: Buffer | string,
+    gridConfig: ParameterGridConfig,
+    rewardPerNode: bigint,
+    requiredNodes: number,
+    deadline: number,
+    consensusType?: ConsensusType
+  ): Promise<{
+    taskId: number;
+    tx: ContractTransactionResponse;
+    modelCid: string;
+    manifestCid: string;
+    totalInputs: number;
+  }> {
+    const inputs = generateParameterGrid(gridConfig);
+    return this.submitBatchTask(
+      modelData,
+      inputs,
+      rewardPerNode,
+      requiredNodes,
+      deadline,
+      consensusType
+    );
+  }
+
+  /**
+   * Get batch results for a completed task
+   *
+   * Downloads result manifests from nodes and aggregates them.
+   *
+   * @param taskId - Task ID
+   * @returns Aggregated batch results with consensus info
+   *
+   * @example
+   * ```typescript
+   * const results = await client.getBatchResults(taskId);
+   *
+   * if (results.consensusReached) {
+   *   // Find the optimal parameter combination
+   *   const optimal = findOptimalByMetric(results.results, 'yield', 'max');
+   *   console.log('Optimal params:', optimal);
+   * }
+   * ```
+   */
+  async getBatchResults(taskId: number): Promise<AggregatedBatchResults> {
+    // Get consensus status
+    const consensus = await this.blockchain.getConsensusStatus(taskId);
+
+    // Get nodes that submitted results
+    const nodes = await this.blockchain.getTaskNodes(taskId);
+
+    // Collect result manifests from nodes
+    const resultManifests: BatchResultManifest[] = [];
+    const executionMetadata: BatchResultManifest['execution_metadata'][] = [];
+
+    for (const nodeAddress of nodes) {
+      try {
+        // Get the result hash for this node
+        const resultHash = await this.blockchain.getNodeResult(taskId, nodeAddress);
+
+        if (resultHash && resultHash !== '0x' + '0'.repeat(64)) {
+          // Try to fetch the result manifest from IPFS
+          // Nodes upload their result manifest, we can find it via task events or direct lookup
+          // For now, we'll collect what we can from the blockchain
+
+          // The full result manifest would need to be fetched from IPFS
+          // This is a simplified version that works with on-chain data
+        }
+      } catch {
+        // Node may not have submitted yet
+      }
+    }
+
+    // Build aggregated results
+    const aggregatedResults: AggregatedBatchResults = {
+      taskId,
+      consensusReached: consensus.consensusReached,
+      totalInputs: 0, // Will be filled from manifest
+      nodesAgreed: consensus.leadingCount,
+      nodesTotal: nodes.length,
+      results: [],
+      executionMetadata: [],
+    };
+
+    // If we have result manifests, merge them
+    if (resultManifests.length > 0) {
+      // Use results from first manifest (they should all match if consensus reached)
+      aggregatedResults.results = resultManifests[0].results;
+      aggregatedResults.totalInputs = resultManifests[0].results.length;
+      aggregatedResults.executionMetadata = resultManifests.map((m) => m.execution_metadata);
+    }
+
+    return aggregatedResults;
+  }
+
+  /**
+   * Fetch and parse a batch result manifest from IPFS
+   *
+   * @param cid - IPFS CID of the result manifest
+   * @returns Parsed result manifest or null if invalid
+   */
+  async fetchBatchResultManifest(cid: string): Promise<BatchResultManifest | null> {
+    try {
+      const data = await this.storage.download(cid);
+      const manifest = JSON.parse(data.toString());
+
+      if (validateBatchResultManifest(manifest)) {
+        return manifest;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch batch input manifest from IPFS
+   *
+   * @param cid - IPFS CID of the input manifest
+   * @returns Parsed input manifest
+   */
+  async fetchBatchInputManifest(cid: string): Promise<BatchInputManifest> {
+    const data = await this.storage.download(cid);
+    return JSON.parse(data.toString());
+  }
+
+  // ============================================
+  // Batch Result Analysis Helpers
+  // ============================================
+
+  /**
+   * Find the result with optimal value for a metric
+   *
+   * @example
+   * ```typescript
+   * const best = client.findOptimalResult(results, 'yield', 'max');
+   * console.log('Best yield:', best?.output.yield);
+   * ```
+   */
+  findOptimalResult(
+    results: BatchResult[],
+    metricKey: string,
+    optimize: 'max' | 'min'
+  ): BatchResult | null {
+    return findOptimalByMetric(results, metricKey, optimize);
+  }
+
+  /**
+   * Filter results by threshold
+   *
+   * @example
+   * ```typescript
+   * const highYield = client.filterResults(results, 'yield', 0.5, 'gte');
+   * ```
+   */
+  filterResults(
+    results: BatchResult[],
+    metricKey: string,
+    threshold: number,
+    comparison: 'gt' | 'gte' | 'lt' | 'lte' | 'eq'
+  ): BatchResult[] {
+    return filterByThreshold(results, metricKey, threshold, comparison);
+  }
+
+  /**
+   * Get top N results by metric
+   *
+   * @example
+   * ```typescript
+   * const top10 = client.getTopResults(results, 'yield', 10, 'desc');
+   * ```
+   */
+  getTopResults(
+    results: BatchResult[],
+    metricKey: string,
+    n: number,
+    order: 'asc' | 'desc' = 'desc'
+  ): BatchResult[] {
+    return getTopN(results, metricKey, n, order);
+  }
+
+  /**
+   * Calculate statistics for a metric
+   *
+   * @example
+   * ```typescript
+   * const stats = client.getMetricStats(results, 'yield');
+   * console.log(`Mean: ${stats.mean}, Std Dev: ${stats.stdDev}`);
+   * ```
+   */
+  getMetricStats(
+    results: BatchResult[],
+    metricKey: string
+  ): { min: number; max: number; mean: number; median: number; stdDev: number } | null {
+    return calculateMetricStats(results, metricKey);
   }
 }

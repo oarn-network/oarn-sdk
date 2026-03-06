@@ -22,7 +22,7 @@ import {
   type BatchInput,
   type BatchResult,
   type BatchResultManifest,
-} from '../src/index.js';
+} from '../dist/esm/index.js';
 
 async function main() {
   console.log('='.repeat(60));

@@ -529,7 +529,6 @@ export class OARNClient {
 
     // Collect result manifests from nodes
     const resultManifests: BatchResultManifest[] = [];
-    const executionMetadata: BatchResultManifest['execution_metadata'][] = [];
 
     for (const nodeAddress of nodes) {
       try {

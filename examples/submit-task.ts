@@ -4,7 +4,7 @@
  * Run with: npx ts-node examples/submit-task.ts
  */
 
-import { OARNClient, TaskStatus, ConsensusType, parseTokenAmount } from '../src/index.js';
+import { OARNClient, TaskStatus, ConsensusType, parseTokenAmount } from '../dist/esm/index.js';
 
 async function main() {
   // Check for required environment variables

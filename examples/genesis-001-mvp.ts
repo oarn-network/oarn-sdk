@@ -16,7 +16,7 @@ import {
   ConsensusType,
   generateParameterGrid,
   parseTokenAmount,
-} from '../src/index.js';
+} from '../dist/esm/index.js';
 
 // Simulated insulin synthesis model (placeholder for real ONNX model)
 // In production, this would be an actual ML model trained on synthesis data

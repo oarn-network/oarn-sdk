@@ -26,20 +26,20 @@ export const ARBITRUM_SEPOLIA_CHAIN_ID = 421614;
 // TaskRegistryV2 ABI (minimal for SDK usage)
 export const TASK_REGISTRY_ABI = [
   // Read functions
-  'function tasks(uint256 taskId) view returns (address requester, bytes32 modelHash, bytes32 inputHash, uint256 rewardPerNode, uint8 requiredNodes, uint256 deadline, uint8 status, uint8 consensusType)',
+  'function tasks(uint256 taskId) view returns (address requester, bytes32 modelHash, bytes32 inputHash, uint256 rewardPerNode, uint256 requiredNodes, uint256 deadline, uint8 status, uint8 consensusType)',
   'function taskCount() view returns (uint256)',
-  'function getConsensusStatus(uint256 taskId) view returns (uint8 totalSubmissions, uint8 uniqueResults, bytes32 leadingResultHash, uint8 leadingCount, bool consensusReached, uint8 requiredForConsensus)',
+  'function getConsensusStatus(uint256 taskId) view returns (uint256 totalSubmissions, uint256 uniqueResults, bytes32 leadingResultHash, uint256 leadingCount, bool consensusReached, uint256 requiredForConsensus)',
   'function getTaskNodes(uint256 taskId) view returns (address[])',
   'function getNodeResult(uint256 taskId, address node) view returns (bytes32)',
 
   // Write functions
-  'function submitTask(bytes32 modelHash, bytes32 inputHash, uint256 rewardPerNode, uint8 requiredNodes, uint256 deadline, uint8 consensusType) returns (uint256)',
+  'function submitTask(bytes32 modelHash, bytes32 inputHash, string modelRequirements, uint256 rewardPerNode, uint256 requiredNodes, uint256 deadline, uint8 consensusType) payable returns (uint256)',
   'function claimTask(uint256 taskId)',
   'function submitResult(uint256 taskId, bytes32 resultHash)',
   'function cancelTask(uint256 taskId)',
 
   // Events
-  'event TaskSubmitted(uint256 indexed taskId, address indexed requester, bytes32 modelHash, bytes32 inputHash, uint256 rewardPerNode, uint8 requiredNodes, uint256 deadline)',
+  'event TaskCreated(uint256 indexed taskId, address indexed requester, bytes32 modelHash, uint256 rewardPerNode, uint256 requiredNodes, uint8 consensusType)',
   'event TaskClaimed(uint256 indexed taskId, address indexed node)',
   'event ResultSubmitted(uint256 indexed taskId, address indexed node, bytes32 resultHash)',
   'event ConsensusReached(uint256 indexed taskId, bytes32 resultHash)',

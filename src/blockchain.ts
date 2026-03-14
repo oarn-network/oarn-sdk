@@ -134,15 +134,21 @@ export class Blockchain {
       requiredNodes,
       deadline,
       consensusType = 0, // Majority by default
+      modelRequirements = '', // Empty string if not provided
     } = options;
+
+    // Calculate total reward to send with transaction
+    const totalReward = rewardPerNode * BigInt(requiredNodes);
 
     const tx: ContractTransactionResponse = await this.taskRegistry.submitTask(
       modelHash,
       inputHash,
+      modelRequirements,
       rewardPerNode,
       requiredNodes,
       deadline,
-      consensusType
+      consensusType,
+      { value: totalReward }
     );
 
     const receipt = await tx.wait();
@@ -150,13 +156,13 @@ export class Blockchain {
       throw new Error('Transaction failed');
     }
 
-    // Extract taskId from TaskSubmitted event
+    // Extract taskId from TaskCreated event
     const event = receipt.logs.find((log): log is EventLog => {
-      return 'eventName' in log && log.eventName === 'TaskSubmitted';
+      return 'eventName' in log && log.eventName === 'TaskCreated';
     });
 
     if (!event || !('args' in event)) {
-      throw new Error('TaskSubmitted event not found');
+      throw new Error('TaskCreated event not found');
     }
 
     const taskId = Number(event.args[0]);

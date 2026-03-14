@@ -179,6 +179,15 @@ export class OARNClient {
     return this.blockchain.cancelTask(taskId);
   }
 
+  /**
+   * Fund an existing task with additional ETH to increase rewards
+   * @param taskId - Task ID to fund
+   * @param amount - Amount of ETH to add (in wei)
+   */
+  async fundTask(taskId: number, amount: bigint): Promise<ContractTransactionResponse> {
+    return this.blockchain.fundTask(taskId, amount);
+  }
+
   // ============================================
   // Node Operator Functions
   // ============================================

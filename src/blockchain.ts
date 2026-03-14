@@ -280,6 +280,19 @@ export class Blockchain {
   }
 
   /**
+   * Fund an existing task with additional ETH to increase rewards
+   */
+  async fundTask(taskId: number, amount: bigint): Promise<ContractTransactionResponse> {
+    if (!this.signer) {
+      throw new Error('Signer required to fund task');
+    }
+
+    const tx = await this.taskRegistry.fundTask(taskId, { value: amount });
+    await tx.wait();
+    return tx;
+  }
+
+  /**
    * Get nodes assigned to a task
    */
   async getTaskNodes(taskId: number): Promise<string[]> {

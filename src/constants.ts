@@ -8,7 +8,7 @@ import type { ContractAddresses } from './types.js';
 // Arbitrum Sepolia contract addresses
 export const ARBITRUM_SEPOLIA_ADDRESSES: ContractAddresses = {
   oarnRegistry: '0x8DD738DBBD4A8484872F84192D011De766Ba5458',
-  taskRegistry: '0x7b4898aDf69447d6ED3d62F6917CE10bD6519562',
+  taskRegistry: '0xD15530ce13188EE88E43Ab07EDD9E8729fCc55D0',
   compToken: '0x24249A523A251E38CB0001daBd54DD44Ea8f1838',
   govToken: '0xB97eDD49C225d2c43e7203aB9248cAbED2B268d3',
 };
@@ -37,6 +37,7 @@ export const TASK_REGISTRY_ABI = [
   'function claimTask(uint256 taskId)',
   'function submitResult(uint256 taskId, bytes32 resultHash)',
   'function cancelTask(uint256 taskId)',
+  'function fundTask(uint256 taskId) payable',
 
   // Events
   'event TaskCreated(uint256 indexed taskId, address indexed requester, bytes32 modelHash, uint256 rewardPerNode, uint256 requiredNodes, uint8 consensusType)',
@@ -45,6 +46,7 @@ export const TASK_REGISTRY_ABI = [
   'event ConsensusReached(uint256 indexed taskId, bytes32 resultHash)',
   'event TaskCompleted(uint256 indexed taskId)',
   'event TaskCancelled(uint256 indexed taskId)',
+  'event TaskFunded(uint256 indexed taskId, address indexed funder, uint256 fundingAmount, uint256 newRewardPerNode)',
 ] as const;
 
 // OARNRegistry ABI

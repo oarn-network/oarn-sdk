@@ -78,6 +78,7 @@ export interface ContractAddresses {
   taskRegistry: string;
   compToken: string;
   govToken: string;
+  wetLabOracle?: string;
 }
 
 // Balance response
@@ -100,4 +101,13 @@ export interface ResultSubmission {
   nodeAddress: string;
   resultHash: string;
   timestamp: number;
+}
+
+// WetLab Oracle consensus result
+export interface WetLabConsensus {
+  taskId: number;
+  agreedHash: string;
+  confirmingLabCount: number;
+  confirmingLabs: string[];
+  verifiedAt: number;
 }

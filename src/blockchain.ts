@@ -16,6 +16,7 @@ import {
   TASK_REGISTRY_ABI,
   OARN_REGISTRY_ABI,
   ERC20_ABI,
+  WET_LAB_ORACLE_ABI,
 } from './constants.js';
 import type {
   ContractAddresses,
@@ -25,6 +26,7 @@ import type {
   ConsensusStatus,
   SubmitTaskOptions,
   TaskFilter,
+  WetLabConsensus,
 } from './types.js';
 
 export interface BlockchainConfig {
@@ -43,6 +45,7 @@ export class Blockchain {
   private _oarnRegistry: Contract | null = null;
   private _compToken: Contract | null = null;
   private _govToken: Contract | null = null;
+  private _wetLabOracle: Contract | null = null;
 
   constructor(config: BlockchainConfig = {}) {
     this.provider = new JsonRpcProvider(config.rpcUrl || DEFAULT_RPC_URL);
@@ -117,6 +120,18 @@ export class Blockchain {
       );
     }
     return this._govToken;
+  }
+
+  /**
+   * Get WetLabOracle contract instance
+   */
+  get wetLabOracle(): Contract {
+    const addr = this.addresses.wetLabOracle;
+    if (!addr) throw new Error('WetLabOracle address not configured');
+    if (!this._wetLabOracle) {
+      this._wetLabOracle = new Contract(addr, WET_LAB_ORACLE_ABI, this.signer || this.provider);
+    }
+    return this._wetLabOracle;
   }
 
   /**
@@ -363,6 +378,56 @@ export class Blockchain {
     }
 
     const tx = await this.compToken.transfer(to, amount);
+    await tx.wait();
+    return tx;
+  }
+
+  /**
+   * Submit a wet lab result to the WetLabOracle
+   */
+  async submitWetLabResult(
+    taskId: number,
+    parametersHash: string,
+    measuredValue: bigint,
+    metric: string
+  ): Promise<ContractTransactionResponse> {
+    if (!this.signer) {
+      throw new Error('Signer required to submit wet lab result');
+    }
+    const tx = await this.wetLabOracle.submitResult(taskId, parametersHash, measuredValue, metric);
+    await tx.wait();
+    return tx;
+  }
+
+  /**
+   * Get verified wet lab result for a task
+   */
+  async getVerifiedWetLabResult(taskId: number): Promise<WetLabConsensus> {
+    const result = await this.wetLabOracle.getVerifiedResult(taskId);
+    return {
+      taskId,
+      agreedHash: result[0],
+      confirmingLabCount: Number(result[1]),
+      confirmingLabs: result[2],
+      verifiedAt: Number(result[3]),
+    };
+  }
+
+  /**
+   * Get pending wet lab rewards for an address
+   */
+  async getWetLabPendingRewards(address: string): Promise<bigint> {
+    return await this.wetLabOracle.pendingRewards(address);
+  }
+
+  /**
+   * Claim wet lab verification rewards
+   */
+  async claimWetLabReward(): Promise<ContractTransactionResponse> {
+    if (!this.signer) {
+      throw new Error('Signer required to claim reward');
+    }
+    const tx = await this.wetLabOracle.claimReward();
     await tx.wait();
     return tx;
   }

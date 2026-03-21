@@ -15,6 +15,7 @@ import type {
   SubmitTaskOptions,
   Balance,
   ConsensusType,
+  WetLabConsensus,
 } from './types.js';
 import type {
   BatchInput,
@@ -679,5 +680,85 @@ export class OARNClient {
     metricKey: string
   ): { min: number; max: number; mean: number; median: number; stdDev: number } | null {
     return calculateMetricStats(results, metricKey);
+  }
+
+  // ============================================
+  // WetLab Oracle
+  // ============================================
+
+  /**
+   * Get top N compute predictions for a batch task, ranked by metric
+   *
+   * @param taskId - Task ID to fetch results for
+   * @param n - Number of top results to return
+   * @param metric - Metric key to rank by (e.g. 'yield', 'binding_affinity')
+   * @param order - 'desc' (default) for highest first, 'asc' for lowest first
+   *
+   * @example
+   * ```typescript
+   * const top5 = await client.getTopPredictions(42, 5, 'yield');
+   * console.log('Best prediction:', top5[0]);
+   * ```
+   */
+  async getTopPredictions(
+    taskId: number,
+    n: number,
+    metric: string,
+    order: 'asc' | 'desc' = 'desc'
+  ): Promise<BatchResult[]> {
+    const aggregated = await this.getBatchResults(taskId);
+    return getTopN(aggregated.results, metric, n, order);
+  }
+
+  /**
+   * Submit a physical wet lab result to the WetLabOracle contract
+   *
+   * @param taskId - Task ID the result corresponds to
+   * @param parametersHash - bytes32 hash of the experimental parameters
+   * @param measuredValue - Measured numeric value (as bigint, scaled by 1e6)
+   * @param metric - Metric name matching the compute prediction (e.g. 'yield')
+   *
+   * @example
+   * ```typescript
+   * const tx = await client.submitWetLabResult(
+   *   42,
+   *   '0xabc...def',
+   *   BigInt(750000), // 0.75 scaled by 1e6
+   *   'yield'
+   * );
+   * ```
+   */
+  async submitWetLabResult(
+    taskId: number,
+    parametersHash: string,
+    measuredValue: bigint,
+    metric: string
+  ): Promise<ContractTransactionResponse> {
+    return this.blockchain.submitWetLabResult(taskId, parametersHash, measuredValue, metric);
+  }
+
+  /**
+   * Get the verified wet lab consensus result for a task
+   */
+  async getVerifiedWetLabResult(taskId: number): Promise<WetLabConsensus> {
+    return this.blockchain.getVerifiedWetLabResult(taskId);
+  }
+
+  /**
+   * Get pending wet lab verification rewards
+   *
+   * @param address - Address to check (defaults to connected wallet)
+   */
+  async getWetLabPendingRewards(address?: string): Promise<bigint> {
+    const addr = address || this.blockchain.signerAddress;
+    if (!addr) throw new Error('Address required');
+    return this.blockchain.getWetLabPendingRewards(addr);
+  }
+
+  /**
+   * Claim accumulated wet lab verification rewards
+   */
+  async claimWetLabReward(): Promise<ContractTransactionResponse> {
+    return this.blockchain.claimWetLabReward();
   }
 }

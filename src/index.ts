@@ -33,6 +33,7 @@ export {
   TASK_REGISTRY_ABI,
   OARN_REGISTRY_ABI,
   ERC20_ABI,
+  WET_LAB_ORACLE_ABI,
 } from './constants.js';
 
 // Types
@@ -46,6 +47,7 @@ export type {
   Balance,
   NodeInfo,
   ResultSubmission,
+  WetLabConsensus,
 } from './types.js';
 
 export { TaskStatus, ConsensusType } from './types.js';

@@ -7,7 +7,7 @@ import type { ContractAddresses } from './types.js';
 
 // Arbitrum Sepolia contract addresses
 export const ARBITRUM_SEPOLIA_ADDRESSES: ContractAddresses = {
-  oarnRegistry: '0x8DD738DBBD4A8484872F84192D011De766Ba5458',
+  oarnRegistry: '0xa122518Cb6E66A804fc37EB26c8a7aF309dCF04C',
   taskRegistry: '0xD15530ce13188EE88E43Ab07EDD9E8729fCc55D0',
   compToken: '0x24249A523A251E38CB0001daBd54DD44Ea8f1838',
   govToken: '0xB97eDD49C225d2c43e7203aB9248cAbED2B268d3',

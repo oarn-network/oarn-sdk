@@ -315,6 +315,17 @@ export class Blockchain {
   }
 
   /**
+   * Get all tasks claimed by a specific node address (via TaskClaimed event history)
+   */
+  async getTasksByNode(nodeAddress: string): Promise<Task[]> {
+    const filter = this.taskRegistry.filters.TaskClaimed(null, nodeAddress);
+    const events = await this.taskRegistry.queryFilter(filter);
+    const taskIds = [...new Set(events.map(e => Number(e.args[0])))];
+    const tasks = await Promise.all(taskIds.map(id => this.getTask(id)));
+    return tasks;
+  }
+
+  /**
    * Get a node's result for a task
    */
   async getNodeResult(taskId: number, nodeAddress: string): Promise<string> {
